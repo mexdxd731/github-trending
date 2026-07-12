@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0d1117" />
+    <meta http-equiv="Content-Language" content="en" />
+  <title>GitHub 热门 Top 12</title>
+  <link rel="stylesheet" href="styles.css?v=2" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1 class="brand">★ GitHub Trending</h1>
+    <p class="subtitle">Updated: <span id="updatedAt">—</span></p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-period="daily">Today</button>
+    <button class="tab" data-period="weekly">This Week</button>
+    <button class="tab" data-period="monthly">This Month</button>
+  </nav>
+
+  <main id="main">
+    <div id="loading" class="state-msg">
+      <div class="spinner"></div>
+      <span>Loading...</span>
+    </div>
+    <div id="error" class="state-msg error" hidden></div>
+    <div id="list" class="card-list"></div>
+  </main>
+
+  <div id="modal" class="modal" hidden>
+    <div class="modal-backdrop" data-close="true"></div>
+    <article class="modal-card">
+      <button class="modal-close" data-close="true" aria-label="关闭">×</button>
+      <header class="modal-header">
+        <img id="modalAvatar" class="modal-avatar" alt="" src="" />
+        <div class="modal-title-wrap">
+          <h2 id="modalTitle"></h2>
+          <a id="modalLink" target="_blank" rel="noopener" class="modal-link"></a>
+        </div>
+      </header>
+      <div class="modal-stats">
+        <span id="modalStars"></span>
+        <span id="modalForks"></span>
+        <span id="modalIssues"></span>
+        <span id="modalLang"></span>
+      </div>
+      <p class="modal-desc" id="modalDesc"></p>
+      <div id="modalTopics" class="topics"></div>
+      <hr class="modal-divider" />
+      <div class="modal-readme-wrap">
+        <div id="modalReadme" class="readme markdown-body"></div>
+      </div>
+      <footer class="modal-footer">
+        <a id="modalLinkBtn" target="_blank" rel="noopener" class="btn-primary">View on GitHub →</a>
+      </footer>
+    </article>
+  </div>
+
+  <script src="app.js?v=2"></script>
+</body>
+</html>
