@@ -1,0 +1,465 @@
+<h1 align="center">Qwen3.8-Flash-Next on ONE DGX Spark (TP=1)</h1>
+
+<p align="center">
+  <sub>by <a href="https://x.com/MiaAI_lab">Mia'a AI Lab</a></sub>
+  <br><br>
+  <a href="https://github.com/sponsors/MiaAI-Lab" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin:0 8px;vertical-align:middle;"><img src="https://img.shields.io/badge/Sponsor%20me%20on%20GitHub-181717?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor me on GitHub" height="28" style="height:28px;width:auto;vertical-align:middle;border:0;" /></a>
+  <a href="https://x.com/MiaAI_lab" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin:0 8px;vertical-align:middle;"><img src="https://img.shields.io/badge/Follow%20me%20on%20X-000000?style=for-the-badge&logo=x&logoColor=white" alt="Follow Mia on X" height="28" style="height:28px;width:auto;vertical-align:middle;border:0;" /></a>
+</p>
+
+Self-contained recipe for serving the `Mia-AiLab/Qwen3.8-Flash-Next-NVFP4`
+checkpoint (99 GB) from a single DGX Spark's 121 GiB unified memory, via vLLM
+with the PLE table offloaded and memory-mapped. This is a **vision-language**
+model: text, images and video all work out of the box (see below). Nothing here depends on the
+2-node files it was derived from.
+
+```
+cp .env.sample .env        # edit IMAGE / HF_TOKEN if needed
+./download.sh              # fetch the ~99 GB checkpoint (resumable)
+./start.sh                 # ~10-12 min to /health; serves on :8888
+./stop.sh                  # container + watchdog, graceful
+```
+
+`start.sh` never downloads anything — it resolves the checkpoint from the local
+Hugging Face cache and fails fast if it is absent. Budget ~130 GiB of free disk:
+99 GB for the checkpoint plus the ~27 GB packed PLE table built on first launch.
+
+`./start.sh --no-launch` prints the derived memory budget and the docker
+command without running anything. `./stop.sh` sends SIGTERM and waits up to
+`STOP_TIMEOUT` (default 30 s) so vLLM can unlink its POSIX shared memory —
+the container runs with `--ipc host`, so segments it leaves behind leak onto
+the host's `/dev/shm` until reboot. `./stop.sh --force` skips the wait.
+
+## Measured profile
+
+`.env.sample` ships **262,144 context (YaRN off), MTP 3, `KV_TARGET_GIB=22`,
+`KV_CACHE_DTYPE=fp8`, `MAX_NUM_SEQS=4`**. Everything below was measured on
+this host on 2026-09-04; each row names the configuration it came from, because
+the numbers move a lot between them.
+
+| Configuration | KV pool | Prefill @400k | Decode (prose, idle) | Needles 5/50/95% |
+|---|---|---|---|---|
+| 262k, `KV_TARGET_GIB=20`, BF16 | 21.28 GiB = 736,837 tok (2.81x a 262k req) | — | — | — |
+| 512k YaRN, `KV_TARGET_GIB=20`, BF16 | 19.2 GiB = 704,558 tok (1.34x a 512k req) | 1,537 tok/s (TTFT 260.3 s) | 28.3 tok/s (sd 2.6) | 3/3 PASS |
+| 512k YaRN, `KV_TARGET_GIB=22`, BF16 | 796,196 tok (1.52x a 512k req) | 1,883 tok/s @32k | — | 12/14 (see FP8 section) |
+| 512k YaRN, `KV_TARGET_GIB=22`, FP8 | 22.2 GiB = 1,431,164 tok (2.73x a 512k req) | 1,495 tok/s (TTFT 267.7 s); 1,769 tok/s @32k | 27.1 tok/s (sd 1.3) | 15/20 (see FP8 section) |
+
+Host `MemAvailable` sits at ~12.9 GiB idle and dipped to a low-water 10.97 GiB
+during a 400k prefill — see the safety rules for why that floor matters.
+
+Two honest gaps: the **shipped default itself** (262k, `KV_TARGET_GIB=22`,
+BF16) has not been benchmarked — the 262k row above is from the older
+`KV_TARGET_GIB=20` profile and predates the `MADV_RANDOM` mmap change. Short-context (32k) prefill is now measured for both
+dtypes; see the FP8 section.
+
+### Prefill and decode, measured with sparkDash
+
+The prefill sweep and prose decode numbers below were measured with
+[sparkDash](https://github.com/MiaAI-Lab/sparkDash) against this server
+(`KV_CACHE_DTYPE=fp8`, 512k YaRN). Benchmark scripts are not shipped in this
+repo; use sparkDash to reproduce them.
+
+**Prefill** — throughput peaks around 32-64k, then falls away as attention cost
+grows with context:
+
+| context | TTFT | prefill |
+|---|---|---|
+| 8k | 5.00 s | 1,646 tok/s |
+| 16k | 8.00 s | 2,052 tok/s |
+| 32k | 15.83 s | **2,073 tok/s** |
+| 64k | 32.20 s | 2,037 tok/s |
+| 128k | 67.41 s | 1,945 tok/s |
+| 256k | 146.40 s | 1,791 tok/s |
+
+**Decode on prose**, by concurrent stream count:
+
+| streams | TTFT | aggregate | per stream |
+|---|---|---|---|
+| 1 | 418 ms | 36.9 tok/s | 36.9 tok/s |
+| 2 | 445 ms | 57.4 tok/s | 29.7 tok/s |
+| 4 | 550 ms | **85.9 tok/s** | 23.4 tok/s |
+
+Decode speed on this model is **strongly content-dependent**, because MTP
+speculative decoding accepts more drafts on predictable text. Measured on this
+server: mean acceptance length 2.1 of a possible 4, per-position acceptance
+0.65 / 0.33 / 0.14, average draft acceptance 37-41%. Highly predictable output
+(quoting text back out of the context) reaches ~41 tok/s; dense technical prose
+sits lower. Treat single-stream decode as a range rather than one number.
+
+
+## Multimodal (images and video)
+
+The checkpoint is multimodal (`is_multimodal: true`, `language_model_only:
+false`, a 27-layer vision tower) and the launcher enables it by default —
+nothing extra to configure. The vision tower is already counted in the
+"weights on GPU" figure, so images and video cost no additional GPU budget.
+
+Verified on this host 2026-09-04 against the running server:
+
+| Modality | Test | Result |
+|---|---|---|
+| Image | 336x336 PNG, three colour bands | named all three in order; 179 prompt tokens |
+| Video | 4 s clip, 16 frames, one colour per second | named all four **in temporal order**; 376 prompt tokens |
+
+Use the standard OpenAI content-part shapes — `image_url` and `video_url`,
+either an `http(s)://` URL or a `data:` URI:
+
+```
+curl -s localhost:8888/v1/chat/completions -H 'Content-Type: application/json' -d '{
+ "model":"qwen3.8-flash-next","max_tokens":600,"temperature":0,
+ "messages":[{"role":"user","content":[
+   {"type":"image_url","image_url":{"url":"https://example.com/photo.jpg"}},
+   {"type":"text","text":"Describe this image."}]}]}'
+```
+
+Three things to know before leaning on it:
+
+- **MTP speculative decoding degrades on multimodal requests.** The draft model
+  cannot take multimodal embeddings, so vLLM logs `using text-only draft inputs
+  instead` and falls back for those requests. The answer is still correct — the
+  target model sees the image — but decode runs closer to the non-speculative
+  speed. Text-only requests are unaffected.
+- **Video is token-hungry.** Frame count and resolution drive prompt length
+  fast. At `YARN=1` you have only 1.34x a full-length request in KV across
+  `MAX_NUM_SEQS=4`, so concurrent video work contends; the 262k profile
+  (2.81x) has far more headroom for it.
+- **Long video at 512k is untested here.** The tests above were long-text *or*
+  short-multimodal, never both at once.
+
+## Configuration
+
+Precedence is **environment > `.env` > built-in default in `start.sh`**, so any
+knob can be overridden per launch:
+
+```
+MAX_MODEL_LEN=65536 MTP_NUM_SPECULATIVE_TOKENS=0 ./start.sh
+```
+
+The safety-relevant knobs are `KV_TARGET_GIB` (how much KV to target; the main
+consumer of host memory) and `HOST_SLACK_GIB` (container cgroup cap = GPU
+budget + this). `KV_TARGET_GIB=16` gives ~590k tokens and more host margin.
+
+### Long context beyond 262k (YaRN)
+
+The model's native context is 262,144. Going past it needs YaRN rope scaling,
+which is off by default. The two lengths live side by side in `.env` and the
+`YARN` flag alone picks which one is served:
+
+```
+YARN=0                     # 0 = native rope, 1 = YaRN
+MAX_MODEL_LEN=262144       # served at YARN=0; cannot exceed native 262144
+YARN_MAX_MODEL_LEN=524288  # served at YARN=1; ignored entirely at YARN=0
+```
+
+So `YARN=1` is the only edit needed to go to 512k, and flipping it back to `0`
+returns to 262k without touching anything else. For a single launch:
+`YARN=1 ./start.sh`.
+
+`start.sh` derives the scaling factor itself (`YARN_MAX_MODEL_LEN / 262144`,
+rounded up — 2.0 for 512k) and passes it to vLLM as a `--hf-overrides`
+deep-merge into `text_config.rope_parameters`, which is the field this model
+actually reads. The existing `mrope_section`, `rope_theta` and
+`partial_rotary_factor` are preserved, so the attention path keeps the same
+`MRotaryEmbedding` and mrope stays enabled.
+
+512k fits with **no other change**: it needs 14.4 GiB of KV, well inside what
+`KV_TARGET_GIB` provides at either 20 or the shipped 22, and the GPU budget and
+cgroup cap are unchanged from 262k. Measured at `YARN=1`, BF16,
+`KV_TARGET_GIB=20` (2026-09-04):
+
+| | |
+|---|---|
+| Available KV cache | 19.2 GiB = **704,558 tokens** (1.34x a full 524,288 request) |
+| Host MemAvailable idle | ~11.3 GiB |
+| Output | coherent; MTP 3 and YaRN run together without incident |
+
+At `KV_TARGET_GIB=22` with FP8 the same context gets 2.73x headroom instead of
+1.34x — see [FP8 KV cache](#fp8-kv-cache-opt-in).
+
+400k prefill stress test (salted to defeat prefix caching, needles planted at
+5% / 50% / 95% depth):
+
+| | |
+|---|---|
+| Prompt | 400,062 tokens |
+| TTFT (prefill) | 260.3 s = **1,537 tok/s** |
+| Needle retrieval | **3/3 PASS**, including 95% depth |
+| Host MemAvailable low-water | **10.97 GiB** (watchdog floor is 6 GiB) |
+| Peak container RSS | 18.7 GiB of the 103 GiB cap |
+
+Decode measured 40 tok/s on that run, but the answer is three codes copied out
+of the context — MTP's best case, not typical decode speed.
+
+| Setting | Result |
+|---|---|
+| `YARN=1` | serves `YARN_MAX_MODEL_LEN`; `MAX_MODEL_LEN` is ignored (logged) |
+| `YARN=0` with `MAX_MODEL_LEN` > 262144 | refused: tells you to set `YARN=1` |
+| `YARN_MAX_MODEL_LEN` > `YARN_CEILING_MODEL_LEN` (524288) | refused: above the validated ceiling |
+| `YARN=1` with `YARN_MAX_MODEL_LEN` at or below 262144 | warns, serves that length with native rope |
+| 1M even with the ceiling raised | refused by the Step 2 budget check (cap 112 GiB vs 105 GiB ceiling) |
+
+YaRN trades some short-context accuracy for the longer window, so leave it off
+unless you need more than 262k. The 512k path serves correctly but its decode
+and prefill speeds have not yet been benchmarked.
+
+### Reasoning is on by default
+
+This build reasons before answering, and `start.sh` passes
+`--reasoning-parser qwen3`, so the thinking block arrives in a separate
+`reasoning` field rather than inside `content`. The chat template enables it
+whenever the flag is unset:
+
+```jinja
+{%- if enable_thinking is undefined or enable_thinking is true %}
+```
+
+Turn it off **per request** — no restart, so reasoning and non-reasoning
+traffic can share one server:
+
+```json
+{"model":"qwen3.8-flash-next",
+ "chat_template_kwargs":{"enable_thinking":false},
+ "messages":[{"role":"user","content":"What is 17*23? One line."}]}
+```
+
+Measured on this host:
+
+| | default | `enable_thinking: false` |
+|---|---|---|
+| reasoning tokens | 41 | **0** |
+| completion tokens | 47 | **12** |
+| `content` | `"\n\n391"` | `"17 * 23 = 391"` |
+
+Two consequences worth knowing:
+
+- **It is why `content` can come back empty.** With a small `max_tokens` the
+  reply is often still inside its reasoning. Budget ~400+ tokens, or disable
+  thinking. This is not a bug — see the sanity test above.
+- **It dominates latency on simple work.** Reasoning ran to 4,841 tokens on the
+  hardest task in our suite. For extraction, classification or short factual
+  answers, disabling it is a large win; leave it on for anything that needs
+  actual multi-step reasoning.
+
+### FP8 KV cache (opt-in)
+
+`KV_CACHE_DTYPE=fp8` roughly doubles the KV pool by storing the main KV in
+fp8-e4m3 and dequantising each tile inside the QSA Triton kernels. **This is
+the shipped default**, on the strength of the measurements below.
+
+```
+KV_CACHE_DTYPE=fp8    # ~2x KV pool, enables a 1M context (default)
+KV_CACHE_DTYPE=auto   # BF16 KV, if you would rather not take the trade
+```
+
+Measured on this host 2026-09-04, identical prompts, `YARN=1`,
+`KV_TARGET_GIB=22`, idle server:
+
+All rows below are at matched settings (`KV_TARGET_GIB=22`, 512k YaRN) unless
+noted. KV pool varies a little between restarts, so a range is given.
+
+| | BF16 | FP8 | Δ |
+|---|---|---|---|
+| KV pool | 779,671–796,196 tok | **1,431,164–1,502,014 tok** | **~1.8–1.9x** |
+| Concurrency @ 524,288 | 1.49–1.52x | **2.73–2.86x** | ~+85% |
+| Prefill @400k | 1,537 tok/s | 1,495 tok/s | −2.7% |
+| Prefill @32k (2 runs each) | 1,883 tok/s | 1,769 tok/s | −6.1% |
+| Decode (prose, idle) | 28.3 tok/s (sd 2.6) | 27.1 tok/s (sd 1.3) | −4% |
+| Reasoning suite (11 tasks) | **11/11** | **11/11** | same |
+| Needle miss rate @32k | 2/14 (14%) | 5/20 (25%) | p=0.67, **n.s.** |
+
+Only the 12 full-attention layers shrink (~84% of bytes/token); the QSA
+side/compressor caches stay BF16, which is why the gain is ~1.85x rather than
+2x, and why `KV_MULT` in `start.sh` is 0.58 rather than 0.5.
+
+**The short-context penalty is real but small.** FP8 halves `block_n` to fit
+GB10 shared memory, which costs more on a short kernel than a long one: −6.1%
+at 32k versus −2.7% at 400k. That is far milder than the −30% the reference
+implementation reported at 32k.
+
+**On quality.** Both dtypes score 11/11 on the reasoning suite
+(4 multi-step short tasks, 4 long chain-of-thought up to ~4,800 reasoning
+tokens, 3 tasks combining three facts from a ~100k-token context). Both max it
+out, so the honest reading is *no gross regression at n=11* — enough to rule
+out the 6/6 → 2/6 collapse the reference measured, not enough to detect finer
+drift. A suite everything passes cannot rank anything.
+
+**A caution about needle tests on this model.** The 95%-depth needle at 32k is
+flaky *regardless of KV dtype*: BF16 missed it 2/14 times, FP8 5/20, which
+Fisher's exact test cannot distinguish (p=0.67). The two shallower needles were
+found 34/34 times in both. So a single needle run is weak evidence here — an
+isolated PASS or FAIL at 95% depth says little, and comparisons need matched
+sample counts on both sides. The 3/3 results quoted elsewhere in this README
+are single samples and should be read with that in mind.
+
+**Two caveats before trusting these numbers.**
+
+*The speed cost is measured at one point on the curve.* The reference
+implementation (see credit below) reported **−30% prefill** and −9% decode,
+against our −2.7% and −4%. That is very likely not a contradiction: their
+prefill figure is at **32k**, ours at **400k**. FP8 halves `block_n` to fit
+GB10 shared memory, which costs occupancy and launch overhead on a short
+kernel but amortises away over a 400k context. **Short-context prefill with
+FP8 has not been measured here and is probably materially worse than −2.7%.**
+
+*Quality is not settled.* Needle retrieval passing at 5/50/95% depth shows the
+scales and dequantisation are broadly right, and short factual/arithmetic
+answers were correct. It does **not** clear the failure mode that matters: the
+reference measured a long-reasoning benchmark falling from **6/6 to 2/6** with
+FP8 KV. This is sparse attention — quantised keys perturb which blocks the
+indexer selects, not merely the attention output — so degradation can appear
+as fluent, plausible, wrong reasoning while needles still pass. No
+long-reasoning A/B has been run on this host. Treat FP8 as a capacity trade
+for workloads you have validated yourself.
+
+### PLE mmap access pattern
+
+The packed PLE table is advised `MADV_RANDOM` (in `patch_ple_offload.py`).
+Without it the kernel faults in a ~64 KiB window to serve each 90-byte row
+lookup. Measured on this host:
+
+| | default mmap | `MADV_RANDOM` |
+|---|---|---|
+| Disk read per decoded token | ~1,366 KiB | **57 KiB** (−24x) |
+| Decode | 26.3 tok/s (sd 1.6) | 28.3 tok/s (sd 2.6) |
+| Host MemAvailable | ~10.9 GiB | **~12.95 GiB** |
+
+The decode difference is within noise — decode was never disk-*throughput*
+bound (1.4 MiB/token at 26 tok/s is only ~36 MB/s). The real win is the
+~2 GiB of unified memory no longer wasted on readahead that is thrown away,
+which is what makes `KV_TARGET_GIB=22` viable.
+
+## Safety rules
+
+Each of these cost a hard host hang during bring-up.
+
+- **Keep host MemAvailable at or above ~10 GiB under load.** Exhausting the
+  unified pool hangs the kernel with no OOM kill and no logs. `KV_TARGET_GIB`
+  is the knob that eats it. The page cache is not spare memory — it is what
+  keeps PLE lookups off NVMe.
+- **`comfy-h3.service` must stay disabled.** It polls `127.0.0.1:8888` and
+  launches ComfyUI (a GPU co-tenant) as soon as anything answers there.
+  `start.sh` refuses port 8888 while that service is active.
+- **Never set `PLE_OFFLOAD=false` at TP=1** — 99 GB through UVM hangs the host.
+- **The stock QSA backend refuses FP8 KV** (`supported_kv_cache_dtypes =
+  ["auto","bfloat16"]`). `patch_qsa_fp8_kv.py` in this repo adds it; without
+  that patch `KV_CACHE_DTYPE=fp8` cannot work, and reading a quantised cache
+  as BF16 would produce silent garbage rather than an error.
+- **Do not raise `YARN_CEILING_MODEL_LEN` past 524288 at BF16.** A 1M context
+  needs ~28.8 GiB of KV, driving the container cap to 112 GiB against a 105 GiB
+  hard ceiling; `start.sh` refuses it at two independent checks. With
+  `KV_CACHE_DTYPE=fp8` a 1M request needs only ~16.7 GiB and the budget does
+  fit — but 1M has **never been run on this host**, at either dtype. Raising
+  the ceiling means you are the one testing it.
+- `docker --memory` does not bound GPU allocations on GB10, only host-side
+  memory. vLLM's `--gpu-memory-utilization` is what bounds the GPU.
+
+`files/memwatch.sh` runs alongside the container and kills it if MemAvailable
+drops below `MEMWATCH_MIN_GIB` (default 6). Its log is under `logs/`.
+
+## Sanity test
+
+```
+curl -s localhost:8888/v1/chat/completions -H 'Content-Type: application/json' -d '{
+ "model":"qwen3.8-flash-next","temperature":0,"max_tokens":400,
+ "messages":[{"role":"user","content":"In one sentence, what is a DGX Spark?"}]}' \
+ | python3 -c "
+import json,sys
+m=json.load(sys.stdin)['choices'][0]['message']
+print('reasoning:', (m.get('reasoning') or '')[:200])
+print('content  :', m.get('content'))"
+```
+
+This build emits reasoning **before** the answer, in a `reasoning` field rather
+than `content`. Budget at least ~400 `max_tokens`: at 200 the reply is still
+inside its reasoning, so `content` comes back empty on a perfectly healthy
+server. Gibberish in either field means the PLE path has regressed (bf16 IPC
+buffer or missing quant scales) — see the patch notes below.
+
+## Layout
+
+- `download.sh` — fetches the checkpoint into the Hugging Face cache
+  (resumable; honours `HF_TOKEN` for gated repos). Uses the host's
+  `huggingface_hub` if present, otherwise the container image.
+- `start.sh` — launcher: derives the GPU budget from live memory,
+  builds the packed PLE table on first run, regenerates the patched vLLM
+  files, starts the container and `files/memwatch.sh`.
+- `stop.sh` — stops the watchdog, then the container (gracefully by default);
+  reports leftover `/dev/shm` segments without deleting them.
+- `files/patch_ple_layer.py`, `files/patch_modelopt_mxfp8.py`,
+  `files/patch_ple_offload.py` — generators that rewrite the patched vLLM
+  files from pristine `*.orig` / `orig/` copies on **every** launch. Those
+  copies are not in the repo — `start.sh` extracts them from the image on
+  first run. Edit the generators; edits to the generated files are overwritten.
+- `files/build_ple_packed_table.py` — one-time packed PLE table builder
+  (27 GB output under `~/.cache/vllm/ple_cache/`, memory-mapped at runtime).
+
+Benchmarks are not part of this repo. The published prefill and decode numbers
+were measured with [sparkDash](https://github.com/MiaAI-Lab/sparkDash).
+
+## What is patched and why
+
+- **PLE layer** (`patch_ple_layer.py`): NVFP4/FP8 dispatch for the PLE table;
+  offloaded rows carry codes *and* scales (90 B/head); the GPU-side placeholder
+  learns its quant method from config because its constructor is skipped under
+  offload; tolerates multi-call `load_weights`; slices the 2560-wide IPC buffer
+  to the 1440 valid bytes.
+- **ModelOpt** (`patch_modelopt_mxfp8.py`): BF16 fallback for MXFP8 shapes that
+  FlashInfer rejects.
+- **PLE offload** (`patch_ple_offload.py`): GB10 has no CUDA stream memory ops
+  (`CAN_USE_STREAM_MEM_OPS=0`, measured), and vLLM's offload semaphore used them
+  and deadlocked after graph capture. Replaced with a host-side handshake — the
+  GPU worker posts a request, the CPU worker copies and writes a sequence number
+  to shared memory, the GPU worker proceeds. It also attaches the memory-mapped
+  packed table instead of loading 27 GB into RAM. The mmap is advised
+  `MADV_RANDOM`: without it the kernel faults in a ~64 KiB window to serve each
+  90-byte row lookup, and measurements here showed **24x** more disk read per
+  decoded token (1,366 -> 57 KiB/token) plus ~2 GiB of page cache wasted on
+  readahead that is never used.
+- **FP8 KV cache** (`patch_qsa_fp8_kv.py`, opt-in via `KV_CACHE_DTYPE=fp8`):
+  dequantises each K/V tile inside the QSA Triton kernels with vLLM's
+  `_cast_kv_tile`, plumbs `k_scale`/`v_scale` into the kernels, relaxes the
+  four BF16-only guards and the inherited FlashAttention rejection, and halves
+  `block_n` under quantisation. Raises the KV pool from ~800k to ~1.38M tokens,
+  which is what makes a 1M context arithmetically possible on one Spark.
+  **Off by default** and a real trade — see the warning `start.sh` prints.
+  The FP8-KV approach is credited to
+  [lancelind/qwen3.8-Flash-DGX](https://github.com/lancelind/qwen3.8-Flash-DGX)
+  (Apache-2.0), reimplemented here against this image's own sources. That
+  credit applies to this one patch; nothing else in this repository derives
+  from that project.
+
+## License
+
+Copyright (C) 2026 MiaAI Lab (https://x.com/MiaAI_lab)
+
+Licensed under the **GNU Affero General Public License v3.0 or later**
+(AGPL-3.0-or-later). See `LICENSE`. Every source file carries an
+`SPDX-License-Identifier: AGPL-3.0-or-later` header.
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. It is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License
+for more details.
+
+Because this is AGPL and this repository exists to run a **network server**:
+if you modify these scripts and offer the resulting service to users over a
+network, section 13 requires you to offer those users the corresponding
+source of your modified version.
+
+### What the license does and does not cover
+
+It covers the files in this repository — the launcher, the patch generators,
+the packed-table builder and the watchdog. It does **not** relicense anything
+they operate on, each of which carries its own terms:
+
+- **vLLM** (Apache-2.0) — not redistributed here. `start.sh` extracts the
+  pristine `*.orig` sources from the container image at runtime, and the patch
+  generators emit modified copies onto your machine only. Those generated files
+  keep vLLM's own Apache-2.0 headers and remain Apache-2.0 works.
+- **The container image** `vllm/vllm-openai:qwen38-flash-next` and its
+  dependencies — upstream terms apply.
+- **The model checkpoint** `Mia-AiLab/Qwen3.8-Flash-Next-NVFP4` — weights are
+  governed by the checkpoint's own license, not by this repository's.
